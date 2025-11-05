@@ -3,33 +3,34 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://backend:3000';
 
 async function getUserToken(): Promise<string | undefined> {
     const cookieStore = await cookies();
-    const accessToken = cookieStore.get('accessToken')?.value;
-    return accessToken
-
+    return cookieStore.get('accessToken')?.value;
 }
 
 export async function createUser(formData: FormData) {
-    const login = formData.get('login') as string;
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    const username = formData.get('username') as string;
+    try {
+        console.log(API_URL)
+        const res = await fetch(`${API_URL}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(Object.fromEntries(formData)),
+        });
 
-    const res = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ login, email, password, username }),
-    });
+        const responseBody = await res.json();
 
-    if (!res.ok) {
-        const error = await res.json();
-        return { error: error.message || 'Ошибка регистрации' };
+        if (!res.ok) {
+            return { success: false, error: responseBody.message || 'Ошибка при регистрации.' };
+        }
+
+        return { success: true, data: responseBody };
+
+    } catch (error) {
+        console.error('Create User Error:', error);
+        return { success: false, error: 'Не удалось подключиться к серверу. Попробуйте снова.' };
     }
-
-    return { message: 'Пользователь успешно зарегистрирован' };
 }
 
 export async function login(formData: FormData) {
@@ -40,87 +41,110 @@ export async function login(formData: FormData) {
         return { error: 'Необходимо заполнить все поля' };
     }
 
-    const emailRegex = /\S+@\S+\.\S+/;
-    const isEmail = emailRegex.test(identifier);
+    const isEmail = /\S+@\S+\.\S+/.test(identifier);
+    const requestBody = { [isEmail ? 'email' : 'login']: identifier, password };
 
-    let requestBody;
+    try {
+        const res = await fetch(`${API_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody),
+        });
 
-    if (isEmail) {
-        requestBody = {
-            email: identifier,
-            password: password
-        };
-    } else {
-        requestBody = {
-            login: identifier,
-            password: password
-        };
+        if (!res.ok) {
+            try {
+                const errorBody = await res.json();
+                return { error: errorBody.message || 'Неверные учетные данные.' };
+            } catch {
+                return { error: 'Неверные учетные данные или ошибка сервера.' };
+            }
+        }
+
+        const data = await res.json();
+
+        if (!data.message?.accessToken) {
+            return { error: 'Не удалось получить токен авторизации от сервера.' };
+        }
+
+        (await cookies()).set('accessToken', data.message.accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 60 * 60,
+            path: '/',
+        });
+
+    } catch (error) {
+        console.error('Login Error:', error);
+        return { error: 'Не удалось подключиться к серверу. Попробуйте снова.' };
     }
-
-    const res = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-    });
-
-    if (!res.ok) {
-        return { error: 'Неверные учетные данные' };
-    }
-    const data = await res.json();
-    console.log(data);
-    (await cookies()).set('accessToken', data.message!.accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60,
-        path: '/',
-    });
 
     redirect('/');
 }
 
 export async function changeName(formData: FormData) {
-    const accessToken = await getUserToken()
+    const accessToken = await getUserToken();
 
     if (!accessToken) {
-        return { error: 'Вы не авторизованы' };
+        redirect('/login');
     }
 
     const new_username = formData.get('new_username') as string;
 
-    const res = await fetch(`${API_URL}/auth/changeProfileName`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({ new_username }),
-    });
+    try {
+        const res = await fetch(`${API_URL}/auth/changeProfileName`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({ new_username }),
+        });
 
-    if (!res.ok) {
-        if (res.status === 401) {
-            return { error: 'Сессия истекла, пожалуйста, войдите снова' };
+        if (!res.ok) {
+            if (res.status === 401) {
+                return { success: false, error: 'Ваша сессия истекла. Пожалуйста, войдите снова.' };
+            }
+            const errorBody = await res.json().catch(() => null);
+            return { success: false, error: errorBody?.message || 'Ошибка при смене имени.' };
         }
-        return { error: 'Ошибка при смене имени' };
+
+        return { success: true, data: { newUsername: new_username } };
+
+    } catch (error) {
+        console.error('Change Name Error:', error);
+        return { success: false, error: 'Не удалось подключиться к серверу. Попробуйте снова.' };
     }
-    return { success: true, newUsername: new_username };
 }
+
 export async function logout() {
     (await cookies()).delete('accessToken');
-    console.log(cookies());
     redirect('/login');
 }
 
-export async function getUserName() {
-    const accessToken = await getUserToken()
-    const res = await fetch(`${API_URL}/auth/username`, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${accessToken}`
-        }
-    });
-    if (res.ok) {
-        const data = await res.json();
-        return data.message
+export async function getUserName(): Promise<string | null> {
+    const accessToken = await getUserToken();
+
+    if (!accessToken) {
+        return null;
     }
 
+    try {
+        const res = await fetch(`${API_URL}/auth/username`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+
+        if (!res.ok) {
+            return null;
+        }
+
+        const data = await res.json();
+        return data.message || null;
+
+    } catch (error) {
+        console.error('Get User Name Error:', error);
+        return null;
+    }
 }

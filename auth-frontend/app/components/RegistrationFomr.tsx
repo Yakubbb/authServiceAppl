@@ -4,6 +4,7 @@ import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { createUser } from "../serverSide/userControlService";
 import Link from 'next/link';
+import { useState } from 'react';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -21,6 +22,7 @@ function SubmitButton() {
 
 export function RegistrationForm() {
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -32,10 +34,11 @@ export function RegistrationForm() {
         <form 
           className="space-y-6"
           action={async (formData) => {
+            setError(null);
             const res = await createUser(formData);
 
             if (res?.error) {
-              alert(res.error);
+              setError(res.error);
             } else {
               const email = formData.get('email') as string;
               const login = formData.get('login') as string;
@@ -103,6 +106,13 @@ export function RegistrationForm() {
             />
           </div>
           
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <strong className="font-bold">Ошибка!</strong>
+              <span className="block sm:inline"> {error}</span>
+            </div>
+          )}
+
           <SubmitButton />
         </form>
 

@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    env_file:
+      - .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: always
+
+  backend:
+    build: ./auth-backend-service
+    container_name: nestjs_backend
+    env_file:
+      - .env
+    ports:
+      - "${BACKEND_PORT}:3000"
+    depends_on:
+      - db
+    restart: always
+
+  frontend:
+    build: ./auth-frontend
+    container_name: nextjs_frontend
+    env_file:
+      - .env
+    ports:
+      - "${FRONTEND_PORT}:3000"
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  pgdata: 

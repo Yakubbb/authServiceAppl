@@ -15,12 +15,16 @@ function SubmitButton() {
 
 export function ChangeNameForm() {
     const [oldName, setOldName] = useState<string>('Загрузка...');
+    const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchUserName = async () => {
             const name = await getUserName();
             if (name) {
                 setOldName(name);
+            } else {
+                setOldName('Не удалось загрузить имя');
             }
         }
         fetchUserName();
@@ -28,12 +32,15 @@ export function ChangeNameForm() {
 
     return (
         <form className="space-y-6" action={async (formData) => {
+            setError(null);
+            setSuccessMessage(null);
             const res = await changeName(formData);
-            
-            if (res?.error) {
-                alert(res.error);
-            } else if (res?.success && res.newUsername) {
-                setOldName(res.newUsername);
+
+            if (!res.success) {
+                setError(res.error);
+            } else {
+                setSuccessMessage('Имя пользователя успешно изменено!');
+                setOldName(res!.data!.newUsername);
             }
         }}>
             <div>
@@ -50,6 +57,18 @@ export function ChangeNameForm() {
                     className="w-full px-4 py-2 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
             </div>
+            {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <strong className="font-bold">Ошибка!</strong>
+                    <span className="block sm:inline"> {error}</span>
+                </div>
+            )}
+            {successMessage && (
+                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+                    <strong className="font-bold">Успех!</strong>
+                    <span className="block sm:inline"> {successMessage}</span>
+                </div>
+            )}
             <SubmitButton />
         </form>
     )

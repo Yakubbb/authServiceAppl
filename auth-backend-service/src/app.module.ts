@@ -14,11 +14,7 @@ import { User } from './auth/entities/user.entity';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: '127.0.0.1',
-        port: 5432,
-        username: configService.get<string>('DB_USERNAME'),
-        password: configService.get<string>('DB_PASSWORD'),
-        database: 'auth_service_db',
+        url: configService.get<string>('DATABASE_URL'),
         entities: [User],
         synchronize: true,
       }),

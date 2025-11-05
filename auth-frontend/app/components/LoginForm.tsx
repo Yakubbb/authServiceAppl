@@ -4,6 +4,7 @@ import { useFormStatus } from 'react-dom';
 import { useSearchParams } from 'next/navigation';
 import { login } from "../serverSide/userControlService";
 import Link from 'next/link';
+import { useState } from 'react';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -22,7 +23,8 @@ function SubmitButton() {
 export function LoginForm() {
   const searchParams = useSearchParams();
   const prefilledIdentifier = searchParams.get('email') || searchParams.get('login');
-  
+  const [error, setError] = useState<string | null>(null);
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
@@ -33,9 +35,10 @@ export function LoginForm() {
         <form 
           className="space-y-6"
           action={async (formData) => {
+            setError(null);
             const res = await login(formData);
             if (res?.error) {
-              alert(res.error);
+              setError(res.error);
             }
         }}>
           <div>
@@ -67,6 +70,13 @@ export function LoginForm() {
             />
           </div>
           
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <strong className="font-bold">Ошибка!</strong>
+              <span className="block sm:inline"> {error}</span>
+            </div>
+          )}
+
           <SubmitButton />
         </form>
 
