@@ -1,10 +1,10 @@
 import { Controller, Post, Body, ValidationPipe, UseGuards, Request, Get } from '@nestjs/common';
 import { CreateUserDto } from './dto/createUser.dto';
 import { AuthService } from './auth.service';
-import { LoginUserDto } from './dto/loginUser.dto';
 import { changeProfileNameDto } from './dto/changeProfileName.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { LoginUserDto } from './dto/loginUser.dto';
 
 @ApiTags('auth')
 @Controller('auth')
