@@ -18,12 +18,9 @@ export class User {
   @Column()
   password: string;
 
+  @Column()
+  salt: string;
+
   @CreateDateColumn()
   createdAt: Date;
-
-  @BeforeInsert()
-  async hashPassword() {
-    const salt = await bcrypt.genSalt();
-    this.password = await bcrypt.hash(this.password, salt);
-  }
 }

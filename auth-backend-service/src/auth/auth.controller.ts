@@ -1,18 +1,39 @@
-import { Controller, Post, Body, ValidationPipe } from '@nestjs/common';
+import { Controller, Post, Body, ValidationPipe, UseGuards, Request } from '@nestjs/common';
 import { CreateUserDto } from './dto/createUser.dto';
-import { LoginUserDto } from './dto/loginUser.Dto';
+import { AuthService } from './auth.service';
+import { LoginUserDto } from './dto/loginUser.dto';
+import { changeProfileNameDto } from './dto/changeProfileName.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
 export class AuthController {
-  authService: any;
+  constructor(private readonly authService: AuthService) { }
   @Post('register')
   async register(@Body(new ValidationPipe()) createUserDto: CreateUserDto) {
-    console.log('Приняты данные для регистрации:', createUserDto);
     const user = await this.authService.register(createUserDto);
-    console.log('Пользователь успешно создан в БД:', user);
     return {
       message: 'Пользователь успешно зарегистрирован',
-      user,
+    };
+  }
+  @Post('login')
+  async login(@Body(new ValidationPipe()) createUserDto: LoginUserDto) {
+    const token = await this.authService.login(createUserDto);
+    return {
+      message: token,
+    };
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('changeProfileName')
+  async changeProfileName(
+    @Request() req,
+    @Body(new ValidationPipe()) changeProfileNameDto: changeProfileNameDto
+  ) {
+    const userId = req.user.id;
+    await this.authService.changeProfileName(userId, changeProfileNameDto.new_username);
+
+    return {
+      message: `Имя пользователя с ID ${userId} успешно изменено.`,
     };
   }
 }
