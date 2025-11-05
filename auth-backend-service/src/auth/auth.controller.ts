@@ -1,4 +1,4 @@
-import { Controller, Post, Body, ValidationPipe, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, ValidationPipe, UseGuards, Request, Get } from '@nestjs/common';
 import { CreateUserDto } from './dto/createUser.dto';
 import { AuthService } from './auth.service';
 import { LoginUserDto } from './dto/loginUser.dto';
@@ -20,6 +20,16 @@ export class AuthController {
     const token = await this.authService.login(createUserDto);
     return {
       message: token,
+    };
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('username')
+  async getUserNameById(@Request() req) {
+    const userId = req.user.id;
+    const name = await this.authService.getUserNameById(userId);
+    return {
+      message: name,
     };
   }
 

@@ -70,4 +70,13 @@ export class AuthService {
         user.username = newUsername;
         return this.usersRepository.save(user);
     }
+
+    async getUserNameById(userId: number): Promise<string> {
+        const user = await this.usersRepository.findOneBy({ id: userId });
+        if (!user) {
+            throw new NotFoundException('Пользователь не найден');
+        }
+
+        return user.username
+    }
 }

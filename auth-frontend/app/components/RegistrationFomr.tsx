@@ -3,6 +3,7 @@
 import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { createUser } from "../serverSide/userControlService";
+import Link from 'next/link';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -36,8 +37,6 @@ export function RegistrationForm() {
             if (res?.error) {
               alert(res.error);
             } else {
-              alert('Регистрация прошла успешно! Сейчас вы будете перенаправлены на страницу входа.');
-
               const email = formData.get('email') as string;
               const login = formData.get('login') as string;
 
@@ -106,6 +105,13 @@ export function RegistrationForm() {
           
           <SubmitButton />
         </form>
+
+        <p className="text-center text-sm text-gray-600 mt-4">
+          Уже есть аккаунт?{' '}
+          <Link href="/login" className="font-medium text-blue-600 hover:underline">
+            Войти
+          </Link>
+        </p>
       </div>
     </div>
   );
