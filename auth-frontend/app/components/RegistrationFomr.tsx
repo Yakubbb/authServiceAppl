@@ -10,8 +10,8 @@ function SubmitButton() {
   const { pending } = useFormStatus();
 
   return (
-    <button 
-      type="submit" 
+    <button
+      type="submit"
       disabled={pending}
       className="w-full bg-green-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
@@ -23,6 +23,43 @@ function SubmitButton() {
 export function RegistrationForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    username: '',
+    login: '',
+    email: '',
+    password: '',
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+
+    const form = event.currentTarget;
+    const data = new FormData(form);
+
+    const res = await createUser(data);
+
+    if (res?.error) {
+      setError(res.error);
+    } else {
+      const email = data.get('email') as string;
+      const login = data.get('login') as string;
+
+      const params = new URLSearchParams();
+      params.append('email', email);
+      params.append('login', login);
+
+      router.push(`/login?${params.toString()}`);
+    }
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -31,35 +68,22 @@ export function RegistrationForm() {
           Создание аккаунта
         </h2>
 
-        <form 
+        <form
           className="space-y-6"
-          action={async (formData) => {
-            setError(null);
-            const res = await createUser(formData);
-
-            if (res?.error) {
-              setError(res.error);
-            } else {
-              const email = formData.get('email') as string;
-              const login = formData.get('login') as string;
-
-              const params = new URLSearchParams();
-              params.append('email', email);
-              params.append('login', login);
-              
-              router.push(`/login?${params.toString()}`);
-            }
-        }}>
+          onSubmit={handleSubmit}
+        >
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
               Имя пользователя
             </label>
-            <input 
+            <input
               id="username"
-              name="username" 
-              type="text" 
-              placeholder="Как вас называть" 
-              required 
+              name="username"
+              type="text"
+              placeholder="Как вас называть"
+              required
+              value={formData.username}
+              onChange={handleChange}
               className="w-full px-4 py-2 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -68,12 +92,14 @@ export function RegistrationForm() {
             <label htmlFor="login" className="block text-sm font-medium text-gray-700 mb-2">
               Логин
             </label>
-            <input 
+            <input
               id="login"
-              name="login" 
-              type="text" 
-              placeholder="your_unique_login" 
-              required 
+              name="login"
+              type="text"
+              placeholder="your_unique_login"
+              required
+              value={formData.login}
+              onChange={handleChange}
               className="w-full px-4 py-2 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -82,12 +108,14 @@ export function RegistrationForm() {
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
               Email
             </label>
-            <input 
+            <input
               id="email"
-              name="email" 
-              type="email" 
-              placeholder="you@example.com" 
-              required 
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              required
+              value={formData.email}
+              onChange={handleChange}
               className="w-full px-4 py-2 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -96,16 +124,18 @@ export function RegistrationForm() {
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
               Пароль
             </label>
-            <input 
+            <input
               id="password"
-              name="password" 
-              type="password" 
-              placeholder="••••••••" 
-              required 
+              name="password"
+              type="password"
+              placeholder="••••••••"
+              required
+              value={formData.password}
+              onChange={handleChange}
               className="w-full px-4 py-2 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          
+
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
               <strong className="font-bold">Ошибка!</strong>

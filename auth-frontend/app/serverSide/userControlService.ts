@@ -68,7 +68,6 @@ export async function login(formData: FormData) {
 
         (await cookies()).set('accessToken', data.message.accessToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
             maxAge: 60 * 60,
             path: '/',
         });
